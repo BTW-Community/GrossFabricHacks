@@ -4,8 +4,8 @@ plugins {
     id "maven"
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = '11'
+targetCompatibility = '11'
 
 archivesBaseName = project.archives_base_name
 version = project.mod_version
