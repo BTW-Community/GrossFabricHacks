@@ -1,4 +1,4 @@
-# GrossFabricHacks
+# GrossFabricHacks 1.17+
 A series of hacks and utilities, for covering legitimate usecases in immoral ways
 
 How to use
@@ -8,7 +8,7 @@ https://github.com/Devan-Kerman/GrossFabricHacks/wiki
 ```groovy
 repositories {
     maven {
-        url = 'https://raw.githubusercontent.com/Devan-Kerman/Devan-Repo/master/'
+        url = 'https://maven.concern.i.ng/'
     }
 }
 
