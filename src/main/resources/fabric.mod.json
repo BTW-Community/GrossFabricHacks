@@ -7,17 +7,18 @@
     "authors": [
         "HalfOf2",
         "auoeke",
-        "sschr15"
+        "sschr15",
+        "Arminias"
     ],
     "contact": {
-        "sources": "https://github.com/auoeke/GrossFabricHacks"
+        "sources": "https://github.com/Devan-Kerman/Fabric-Transformer"
     },
     "license": "MPLv2",
     "icon": "assets/grossfabrichacks/icon.png",
     "environment": "*",
     "depends": {
         "fabricloader": ">=0.11.6",
-        "java": ">=16"
+        "java": ">=17"
     },
     "mixins": [
         "grossfabrichacks.mixins.json"

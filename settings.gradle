@@ -5,7 +5,15 @@ pluginManagement {
             name = 'Fabric'
             url = 'https://maven.fabricmc.net/'
         }
+        maven {
+            url 'https://BTW-Community.github.io/BTW-gradle'
+        }
+        maven {
+            name = 'Jitpack'
+            url = 'https://jitpack.io'
+        }
         gradlePluginPortal()
+        mavenCentral()
     }
 }
-rootProject.name = "grossfabrichacks"
+rootProject.name = "GrossFabricHacks"

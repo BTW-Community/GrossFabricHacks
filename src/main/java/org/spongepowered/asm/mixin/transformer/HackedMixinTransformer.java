@@ -1,10 +1,7 @@
 package org.spongepowered.asm.mixin.transformer;
 
-import net.devtech.grossfabrichacks.GrossFabricHacks;
-import net.devtech.grossfabrichacks.Rethrower;
+import net.devtech.grossfabrichacks.State;
 import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.launch.MixinInitialisationError;
 import org.spongepowered.asm.mixin.MixinEnvironment;
@@ -17,8 +14,10 @@ import org.spongepowered.asm.util.Constants;
 import org.spongepowered.asm.util.asm.ASM;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.util.List;
+import java.util.logging.Logger;
+
+import static java.util.logging.Logger.getLogger;
 
 public class HackedMixinTransformer extends TreeTransformer implements IMixinTransformer {
     // Until a space-separated comment, all of this is part of MixinTransformer itself
@@ -173,14 +172,14 @@ public class HackedMixinTransformer extends TreeTransformer implements IMixinTra
     public static final MixinProcessor pub_processor;
     public static final Extensions pub_extensions;
 
-    private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks/HackedMixinTransformer");
+    private static final Logger LOGGER = getLogger("GrossFabricHacks/HackedMixinTransformer");
 
     @Override
     public byte[] transformClass(final MixinEnvironment environment, final String name, byte[] classBytes) {
         // raw class patching
-        if (GrossFabricHacks.State.transformPreMixinRawClass) {
-            classBytes = GrossFabricHacks.State.preMixinRawClassTransformer.transform(name, classBytes);
-        }
+        /*if (State.transformPreMixinRawClass) {
+            classBytes = State.preMixinRawClassTransformer.transform(name, classBytes);
+        }*/
 
         // ASM patching
         return this.transform(environment, this.readClass(name, classBytes), classBytes);
@@ -190,20 +189,20 @@ public class HackedMixinTransformer extends TreeTransformer implements IMixinTra
         final String name = classNode.name;
 
         // return immediately to reduce jumps and assignments
-        if (GrossFabricHacks.State.shouldWrite) {
-            if (GrossFabricHacks.State.transformPreMixinAsmClass) {
-                GrossFabricHacks.State.preMixinAsmClassTransformer.transform(name, classNode);
+        if (State.shouldWrite) {
+            if (State.transformPreMixinAsmClass) {
+                State.preMixinAsmClassTransformer.transform(name, classNode);
             }
 
             processor.applyMixins(environment, name.replace('/', '.'), classNode);
 
-            if (GrossFabricHacks.State.transformPostMixinAsmClass) {
-                GrossFabricHacks.State.postMixinAsmClassTransformer.transform(name, classNode);
+            if (State.transformPostMixinAsmClass) {
+                State.postMixinAsmClassTransformer.transform(name, classNode);
             }
 
             // post mixin raw patching
-            if (GrossFabricHacks.State.transformPostMixinRawClass) {
-                return GrossFabricHacks.State.postMixinRawClassTransformer.transform(name, this.writeClass(classNode));
+            if (State.transformPostMixinRawClass) {
+                return State.postMixinRawClassTransformer.transform(name, this.writeClass(classNode));
             }
 
             return this.writeClass(classNode);
@@ -229,16 +228,11 @@ public class HackedMixinTransformer extends TreeTransformer implements IMixinTra
             LOGGER.info("Unsafe cast mixin transformer success!");
 
             instance = (HackedMixinTransformer) mixinTransformer;
-            
-            Field processorField = Class.forName("org.spongepowered.asm.mixin.transformer.MixinTransformer").getDeclaredField("processor");
-            processorField.setAccessible(true);
-            pub_processor = (MixinProcessor) processorField.get(mixinTransformer);
-            
-            Field extensionsField = superclass.getDeclaredField("extensions");
-            extensionsField.setAccessible(true);
-            pub_extensions = (Extensions) extensionsField.get(mixinTransformer);
+
+            pub_processor = instance.processor;
+            pub_extensions = instance.extensions;
         } catch (Throwable throwable) {
-            throw Rethrower.rethrow(throwable);
+            throw new RuntimeException(throwable);
         }
     }
 }

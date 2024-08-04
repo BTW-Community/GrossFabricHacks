@@ -1,8 +1,5 @@
 package net.devtech.grossfabrichacks.massm;
 
-import it.unimi.dsi.fastutil.chars.CharArrayList;
-import it.unimi.dsi.fastutil.chars.CharList;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +27,7 @@ public class Cls {
 
 	private int constantPoolEnd, interfacesEnd; // EOF
 	private int accessFlags, thisClass, superClass;
-	private char[] classNames, fieldRef, methodRef, primitiveConst, nameAndType, utf8, other, interfaces;
+	private Character[] classNames, fieldRef, methodRef, primitiveConst, nameAndType, utf8, other, interfaces;
 	private List<String> utf8Strings;
 
 	public Cls(byte[] array) {
@@ -84,11 +81,11 @@ public class Cls {
 		return this.superClass;
 	}
 
-	public char[] readInterfacePool() {
+	public Character[] readInterfacePool() {
 		if(this.interfacesEnd == 0) {
 			this.readConstantPool();
 			int interfaces = this.getU2(this.constantPoolEnd + 6);
-			char[] charr = new char[interfaces];
+			Character[] charr = new Character[interfaces];
 			for (int i = 0; i < interfaces; i++) {
 				charr[i] = this.getU2(this.constantPoolEnd + 8 + i * 2);
 			}
@@ -103,62 +100,65 @@ public class Cls {
 			char index = 8;
 			int constant_pool_count = this.getU2(index);
 			index += 2;
-			CharList className = new CharArrayList(), fieldRef = new CharArrayList(), methodRef = new CharArrayList(), primitiveConst = new CharArrayList(), nameAndType = new CharArrayList(), utf8 = new CharArrayList(), other = new CharArrayList();
+			List<Character> className = new ArrayList<>(), fieldRef = new ArrayList<>(), methodRef = new ArrayList<>(), primitiveConst = new ArrayList<>(), nameAndType = new ArrayList<>(), utf8 = new ArrayList<>(), other = new ArrayList<>();
 			for (int i = 0; i < constant_pool_count; i++) {
 				byte tag = this.bytecode[index];
 				switch (tag) {
-					// @formatter:off
-					case 7 -> {
-						className.add(index);
-						index += 3;
-					}
-					case 8, 16 -> {
-						other.add(index);
-						index += 3;
-					}
-					case 9 -> {
-						fieldRef.add(index);
-						index += 5;
-					}
-					case 10, 11 -> {
-						methodRef.add(index);
-						index += 5;
-					}
-					case 3, 4 -> {
-						primitiveConst.add(index);
-						index += 5;
-					}
-					case 12 -> {
-						nameAndType.add(index);
-						index += 5;
-					}
-					case 18 -> {
-						other.add(index);
-						index += 5;
-					}
-					case 5, 6 -> {
-						primitiveConst.add(index);
-						index += 9;
-					}
-					case 15 -> {
-						other.add(index);
-						index += 4;
-					}
-					default -> {
-						utf8.add(index);
-						int len = this.getU2(index);
-						index += len + 3;
-					}
-
-					//@formatter:on
+				// @formatter:off
+				case 7:
+					className.add(index);
+					index += 3;
+					break;
+				case 8:
+				case 16:
+					other.add(index);
+					index += 3;
+					break;
+					case 9:
+					fieldRef.add(index);
+					index += 5;
+					break;
+				case 10:
+				case 11:
+					methodRef.add(index);
+					index += 5;
+					break;
+				case 3:
+				case 4:
+					primitiveConst.add(index);
+					index += 5;
+					break;
+				case 12:
+					nameAndType.add(index);
+					index += 5;
+					break;
+				case 18:
+					other.add(index);
+					index += 5;
+					break;
+				case 5:
+				case 6:
+					primitiveConst.add(index);
+					index += 9;
+					break;
+				case 15:
+					other.add(index);
+					index += 4;
+					break;
+				default: {
+					utf8.add(index);
+					int len = this.getU2(index);
+					index+=len + 3;
 				}
-				this.other = other.toCharArray();
-				this.utf8 = utf8.toCharArray();
-				this.nameAndType = nameAndType.toCharArray();
-				this.primitiveConst = primitiveConst.toCharArray();
-				this.fieldRef = fieldRef.toCharArray();
-				this.methodRef = methodRef.toCharArray();
-				this.classNames = className.toCharArray();
+				//@formatter:on
+				}
+				this.other = other.toArray(new Character[0]);
+				this.utf8 = utf8.toArray(new Character[0]);
+				this.nameAndType = nameAndType.toArray(new Character[0]);
+				this.primitiveConst = primitiveConst.toArray(new Character[0]);
+				this.fieldRef = fieldRef.toArray(new Character[0]);
+				this.methodRef = methodRef.toArray(new Character[0]);
+				this.classNames = className.toArray(new Character[0]);
 			}
 			this.constantPoolEnd = index;
 		}
@@ -194,37 +194,37 @@ public class Cls {
 		return this.major;
 	}
 
-	public char[] getClassNameIndexes() {
+	public Character[] getClassNameIndexes() {
 		this.readConstantPool();
 		return this.classNames;
 	}
 
-	public char[] getFieldRefIndexes() {
+	public Character[] getFieldRefIndexes() {
 		this.readConstantPool();
 		return this.fieldRef;
 	}
 
-	public char[] getMethodRefIndexes() {
+	public Character[] getMethodRefIndexes() {
 		this.readConstantPool();
 		return this.methodRef;
 	}
 
-	public char[] getPrimitiveConstIndexes() {
+	public Character[] getPrimitiveConstIndexes() {
 		this.readConstantPool();
 		return this.primitiveConst;
 	}
 
-	public char[] getNameAndTypeIndexes() {
+	public Character[] getNameAndTypeIndexes() {
 		this.readConstantPool();
 		return this.nameAndType;
 	}
 
-	public char[] getUtf8Indexes() {
+	public Character[] getUtf8Indexes() {
 		this.readConstantPool();
 		return this.utf8;
 	}
 
-	public char[] getOtherIndexes() {
+	public Character[] getOtherIndexes() {
 		this.readConstantPool();
 		return this.other;
 	}

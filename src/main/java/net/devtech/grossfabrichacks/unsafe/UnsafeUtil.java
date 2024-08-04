@@ -1,11 +1,9 @@
 package net.devtech.grossfabrichacks.unsafe;
 
-import net.devtech.grossfabrichacks.Rethrower;
-import net.gudenau.lib.unsafe.Unsafe;
-
 import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.security.ProtectionDomain;
+import net.gudenau.lib.unsafe.Unsafe;
 
 /**
  * works across all normal JVMs I think
@@ -176,7 +174,7 @@ public class UnsafeUtil extends Unsafe {
         try {
             putInt(object, objectFieldOffset(object.getClass().getDeclaredField(field)), value);
         } catch (final NoSuchFieldException exception) {
-            throw Rethrower.rethrow(exception);
+            throw new RuntimeException(exception);
         }
     }
 
@@ -184,7 +182,7 @@ public class UnsafeUtil extends Unsafe {
         try {
             putInt(object, objectFieldOffset(klass.getDeclaredField(field)), value);
         } catch (final NoSuchFieldException exception) {
-            throw Rethrower.rethrow(exception);
+            throw new RuntimeException(exception);
         }
     }
 
@@ -257,7 +255,7 @@ public class UnsafeUtil extends Unsafe {
 
             return bytecode;
         } catch (final Throwable throwable) {
-            throw Rethrower.rethrow(throwable);
+            throw new RuntimeException(throwable);
         }
     }
 
@@ -265,7 +263,7 @@ public class UnsafeUtil extends Unsafe {
         try {
             return initialiizeClass(findAndDefineClass(binaryName, loader));
         } catch (final Throwable throwable) {
-            throw Rethrower.rethrow(throwable);
+            throw new RuntimeException(throwable);
         }
     }
 
@@ -273,7 +271,7 @@ public class UnsafeUtil extends Unsafe {
         try {
             return (Class<T>) Class.forName(name);
         } catch (final ClassNotFoundException exception) {
-            throw Rethrower.rethrow(exception);
+            throw new RuntimeException(exception);
         }
     }
 
@@ -281,7 +279,7 @@ public class UnsafeUtil extends Unsafe {
         try {
             return (Class<T>) Class.forName(name, initialize, loader);
         } catch (final ClassNotFoundException exception) {
-            throw Rethrower.rethrow(exception);
+            throw new RuntimeException(exception);
         }
     }
 
@@ -314,7 +312,7 @@ public class UnsafeUtil extends Unsafe {
 
             addressFactor = x64 ? 8 : 1;
         } catch (final Throwable throwable) {
-            throw Rethrower.rethrow(throwable);
+            throw new RuntimeException(throwable);
         }
 
         FIRST_INT_KLASS = getKlass(new FirstInt());

@@ -1,17 +1,20 @@
 package net.devtech.grossfabrichacks.mixin;
 
-import net.devtech.grossfabrichacks.GrossFabricHacks;
+import net.devtech.grossfabrichacks.State;
 import net.devtech.grossfabrichacks.entrypoints.PrePreLaunch;
 import net.devtech.grossfabrichacks.transformer.TransformerApi;
+import net.fabricmc.loader.impl.entrypoint.EntrypointUtilsHack;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
-import user11681.dynamicentry.DynamicEntry;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
 
 public class GrossFabricHacksPlugin implements IMixinConfigPlugin {
+    public static List preApplyList;
     @Override
     public void onLoad(String mixinPackage) {}
 
@@ -34,17 +37,27 @@ public class GrossFabricHacksPlugin implements IMixinConfigPlugin {
     }
 
     @Override
-    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
-
+    public void preApply(String string, ClassNode classNode, String string2, IMixinInfo iMixinInfo) {
+        if (preApplyList != null) {
+            for (Object e : preApplyList) {
+                try {
+                    ((Method)e).invoke(null, string, classNode, string2, iMixinInfo);
+                }
+                catch (IllegalAccessException | InvocationTargetException reflectiveOperationException) {
+                    throw new RuntimeException(reflectiveOperationException);
+                }
+            }
+        }
+    }
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
 
     static {
-        GrossFabricHacks.State.mixinLoaded = true;
+        State.mixinLoaded = true;
 
-        DynamicEntry.execute("gfh:prePreLaunch", PrePreLaunch.class, PrePreLaunch::onPrePreLaunch);
+        EntrypointUtilsHack.invoke("gfh:prePreLaunch", PrePreLaunch.class, PrePreLaunch::onPrePreLaunch);
 
-        if (GrossFabricHacks.State.shouldWrite || GrossFabricHacks.State.manualLoad) {
+        if (State.shouldWrite || State.manualLoad) {
             TransformerApi.manualLoad();
         }
     }

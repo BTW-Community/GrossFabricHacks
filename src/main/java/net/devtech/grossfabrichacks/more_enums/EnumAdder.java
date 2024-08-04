@@ -1,13 +1,14 @@
 package net.devtech.grossfabrichacks.more_enums;
 
+
 import jdk.internal.reflect.ConstructorAccessor;
-import net.devtech.grossfabrichacks.Rethrower;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+
 
 public class EnumAdder {
 	private static final Field ENUM_CONSTANT_DIRECTORY;
@@ -25,7 +26,7 @@ public class EnumAdder {
 			AQUIRE_CONSTRUCTOR_ACCESSOR = Constructor.class.getDeclaredMethod("acquireConstructorAccessor");
 			AQUIRE_CONSTRUCTOR_ACCESSOR.setAccessible(true);
 		} catch (ReflectiveOperationException e) {
-			throw Rethrower.rethrow(e);
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -55,7 +56,7 @@ public class EnumAdder {
 				return instance;
 			}
 		} catch (ReflectiveOperationException e) {
-			throw Rethrower.rethrow(e);
+			throw new RuntimeException(e);
 		}
 	}
 

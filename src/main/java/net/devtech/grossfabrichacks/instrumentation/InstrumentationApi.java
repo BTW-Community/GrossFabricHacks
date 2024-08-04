@@ -1,18 +1,5 @@
 package net.devtech.grossfabrichacks.instrumentation;
 
-import net.bytebuddy.agent.ByteBuddyAgent;
-import net.devtech.grossfabrichacks.GrossFabricHacks;
-import net.devtech.grossfabrichacks.Rethrower;
-import net.devtech.grossfabrichacks.transformer.TransformerApi;
-import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
-import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
-import net.fabricmc.loader.api.FabricLoader;
-import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.instrument.Instrumentation;
@@ -21,10 +8,24 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import net.bytebuddy.agent.ByteBuddyAgent;
+import net.devtech.grossfabrichacks.GrossFabricHacks;
+import net.devtech.grossfabrichacks.transformer.TransformerApi;
+import net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer;
+import net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer;
+import net.fabricmc.loader.api.FabricLoader;
+import org.apache.commons.io.IOUtils;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
+
+import static java.util.logging.Logger.getLogger;
 
 public class InstrumentationApi {
     private static final Set<String> TRANSFORMABLE = new HashSet<>();
-    private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks/InstrumentationApi");
+    private static final Logger LOGGER = getLogger("GrossFabricHacks/InstrumentationApi");
 
     public static Instrumentation instrumentation;
 
@@ -54,7 +55,7 @@ public class InstrumentationApi {
         try {
             retransform(Class.forName(cls), transformer);
         } catch (final ClassNotFoundException exception) {
-            throw Rethrower.rethrow(exception);
+            throw new RuntimeException(exception);
         }
     }
 
@@ -75,7 +76,7 @@ public class InstrumentationApi {
         try {
             retransform(Class.forName(cls), transformer);
         } catch (final ClassNotFoundException exception) {
-            throw Rethrower.rethrow(exception);
+            throw new RuntimeException(exception);
         }
     }
 
@@ -100,11 +101,11 @@ public class InstrumentationApi {
             instrumentation.retransformClasses(cls);
             instrumentation.removeTransformer(fileTransformer);
         } catch (UnmodifiableClassException e) {
-            throw Rethrower.rethrow(e);
+            throw new RuntimeException(e);
         }
     }
 
-    // to separate out the static block
+    // to seperate out the static block
     private static class Transformable {
         private static boolean init;
         private static final CompatibilityClassFileTransformer TRANSFORMER = (loader, className, classBeingRedefined, protectionDomain, classfileBuffer) -> {
@@ -162,7 +163,7 @@ public class InstrumentationApi {
 
             instrumentation = (Instrumentation) field.get(null);
         } catch (final Throwable throwable) {
-            LOGGER.error("An error occurred during an attempt to attach an instrumentation agent, which might be due to spaces in the path of the game's installation.", throwable);
+            LOGGER.log(Level.SEVERE, "An error occurred during an attempt to attach an instrumentation agent, which might be due to spaces in the path of the game's installation.", throwable);
         }
     }
 }

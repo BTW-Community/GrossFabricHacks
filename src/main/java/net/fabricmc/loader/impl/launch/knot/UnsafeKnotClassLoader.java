@@ -1,23 +1,40 @@
 package net.fabricmc.loader.impl.launch.knot;
 
-import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
-import net.devtech.grossfabrichacks.Rethrower;
 import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.impl.game.GameProvider;
-import net.fabricmc.loader.impl.util.LoaderUtil;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-public class UnsafeKnotClassLoader extends KnotCompatibilityClassLoader {
-    public static final Object2ReferenceOpenHashMap<String, Class<?>> classes = new Object2ReferenceOpenHashMap<>();
-    public static final Class<KnotClassLoader> superclass = KnotClassLoader.class;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URLClassLoader;
+import java.util.HashMap;
+import java.util.logging.Logger;
+
+import static java.util.logging.Logger.getLogger;
+
+public class UnsafeKnotClassLoader extends KnotClassLoaderHack {
+    public static final HashMap<String, Class<?>> classes = new HashMap<>();
+    public static final Class<net.fabricmc.loader.impl.launch.knot.KnotClassLoader> superclass = KnotClassLoader.class;
     public static final ClassLoader applicationClassLoader;
 
     public static final KnotClassDelegate delegate;
-    public static final ClassLoader parent;
+    public static final URLClassLoader parent;
 
-    private static final Logger LOGGER = LogManager.getLogger("GrossFabricHacks/UnsafeKnotClassLoader");
+    private static final Logger LOGGER = getLogger("GrossFabricHacks/UnsafeKnotClassLoader");
+    private static final Method delegate_getMetadata;
+    private static final Method delegate_getPostMixinClassByteArray;
+
+
+    static {
+        try {
+            delegate_getMetadata = KnotClassDelegateHack.class.getDeclaredMethod("getMetadata", String.class);
+            delegate_getMetadata.setAccessible(true);
+            delegate_getPostMixinClassByteArray = KnotClassDelegateHack.class.getDeclaredMethod("getPostMixinClassByteArray", String.class, boolean.class);
+            delegate_getPostMixinClassByteArray.setAccessible(true);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public UnsafeKnotClassLoader(final boolean isDevelopment, final EnvType envType, final GameProvider provider) {
         super(isDevelopment, envType, provider);
@@ -41,7 +58,7 @@ public class UnsafeKnotClassLoader extends KnotCompatibilityClassLoader {
         return klass;
     }
 
-    @Override
+    //@Override
     public boolean isClassLoaded(final String name) {
         synchronized (super.getClassLoadingLock(name)) {
             return super.findLoadedClass(name) != null || classes.get(name) != null;
@@ -58,9 +75,15 @@ public class UnsafeKnotClassLoader extends KnotCompatibilityClassLoader {
                 klass = this.findLoadedClass(name);
 
                 if (klass == null) {
-//                    try {
-                        if (!name.startsWith("com.google.gson.") && !name.startsWith("java.")) {
-                            final byte[] input = delegate.getPostMixinClassByteArray(name, false);
+                    try {
+                        if (/*!name.startsWith("com.google.gson.") &&*/ !name.startsWith("java.")) {
+                            final byte[] input;
+                            try {
+                                // TODO check boolean
+                                input = (byte[]) delegate_getPostMixinClassByteArray.invoke(delegate, name, false);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                throw new RuntimeException(e);
+                            }
 
                             if (input != null) {
                                 final int pkgDelimiterPos = name.lastIndexOf('.');
@@ -73,8 +96,14 @@ public class UnsafeKnotClassLoader extends KnotCompatibilityClassLoader {
                                     }
                                 }
 
-                                klass = super.defineClass(name, input, 0, input.length, delegate.getMetadata(name, parent.getResource(LoaderUtil.getClassFileName(name))).codeSource);
+                                //klass = super.defineClass(name, input, 0, input.length, delegate.getMetadata(name, parent.getResource(delegate.getClassFileName(name))).codeSource);
+                                try {
+                                    klass = super.defineClass(name, input, 0, input.length, ((KnotClassDelegate.Metadata) delegate_getMetadata.invoke(delegate, name)).codeSource);
+                                } catch (IllegalAccessException | InvocationTargetException e) {
+                                    throw new RuntimeException(e);
+                                }
                             } else {
+
                                 klass = applicationClassLoader.loadClass(name);
                             }
                         } else {
@@ -85,6 +114,9 @@ public class UnsafeKnotClassLoader extends KnotCompatibilityClassLoader {
 //
 //                        klass = UnsafeUtil.defineClass(name, delegate.getPostMixinClassByteArray(name));
 //                    }
+                    } catch (final ClassNotFoundException | RuntimeException e) {
+                        throw e;
+                    }
                 }
 
                 classes.put(name, klass);
@@ -110,7 +142,7 @@ public class UnsafeKnotClassLoader extends KnotCompatibilityClassLoader {
             classes.put(thisClass.getName(), thisClass);
 
             for (final String name : new String[]{
-                "net.devtech.grossfabrichacks.GrossFabricHacks$State",
+                "net.devtech.grossfabrichacks.State",
                 "net.devtech.grossfabrichacks.unsafe.UnsafeUtil$FirstInt",
                 "net.devtech.grossfabrichacks.unsafe.UnsafeUtil"}) {
                 classes.put(name, Class.forName(name, false, applicationClassLoader));
@@ -120,14 +152,19 @@ public class UnsafeKnotClassLoader extends KnotCompatibilityClassLoader {
                 "net.devtech.grossfabrichacks.transformer.asm.AsmClassTransformer",
                 "net.devtech.grossfabrichacks.transformer.asm.RawClassTransformer",
                 "net.devtech.grossfabrichacks.transformer.TransformerApi",
-                "org.spongepowered.asm.mixin.transformer.HackedMixinTransformer"}) {
+                "org.spongepowered.asm.mixin.transformer.HackedMixinTransformer",
+            }) {
                 classes.put(name, UnsafeUtil.findAndDefineClass(name, applicationClassLoader));
             }
 
-            delegate = ((KnotCompatibilityClassLoader) UnsafeUtil.unsafeCast(knotClassLoader, KnotCompatibilityClassLoader.class)).getDelegate();
-            parent = knotClassLoader.getParent();
+
+            delegate = ((UnsafeKnotClassLoader) knotClassLoader).getDelegate();
+
+            UnsafeUtil.unsafeCast(delegate, UnsafeUtil.getKlassFromClass(KnotClassDelegateHack.class));
+
+            parent = (URLClassLoader) knotClassLoader.getParent();
         } catch (final Throwable throwable) {
-            throw Rethrower.rethrow(throwable);
+            throw new RuntimeException(throwable);
         }
     }
 }
