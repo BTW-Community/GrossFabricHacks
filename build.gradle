@@ -33,6 +33,7 @@ dependencies {
 
     modImplementation fileTree(dir: "libs", include: "**.jar")
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation 'net.fabricmc:fabric-loom:1.4-SNAPSHOT'
 
     //implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
@@ -44,6 +45,9 @@ dependencies {
 
     implementation("org.ow2.asm:asm:9.7")
     implementation("org.ow2.asm:asm-commons:9.7")
+    implementation("org.ow2.asm:asm-analysis:9.7")
+    implementation("org.ow2.asm:asm-tree:9.7")
+    implementation("org.ow2.asm:asm-util:9.7")
 
     // concern
     // extraLibs files("${System.getProperty('java.home')}/../lib/tools.jar")

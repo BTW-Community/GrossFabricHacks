@@ -3,6 +3,8 @@ package net.fabricmc.loader.impl.launch.knot;
 import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.impl.game.GameProvider;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -115,6 +117,16 @@ public class UnsafeKnotClassLoader extends KnotClassLoaderHack {
 //                        klass = UnsafeUtil.defineClass(name, delegate.getPostMixinClassByteArray(name));
 //                    }
                     } catch (final ClassNotFoundException | RuntimeException e) {
+                        LOGGER.warning("Failed to load class " + name + " from KnotClassLoader, CREATE A DUMMY CLASS");
+                        ClassNode klassNode = new ClassNode();
+                        klassNode.name = name.replace('.', '/');
+                        klassNode.superName = "java/lang/Object";
+                        klassNode.version = 61;
+                        klassNode.access = 33;
+                        String var10001 = name.substring(name.lastIndexOf(46) + 1);
+                        klassNode.sourceFile = var10001 + ".java";
+                        ClassWriter writer = new ClassWriter(3);
+                        klassNode.accept(writer);
                         throw e;
                     }
                 }
@@ -136,6 +148,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoaderHack {
             final ClassLoader knotClassLoader = Thread.currentThread().getContextClassLoader();
             applicationClassLoader = thisClass.getClassLoader();
 
+            long knotClassLoaderKlass = UnsafeUtil.getKlass(knotClassLoader);
             UnsafeUtil.unsafeCast(knotClassLoader, UnsafeUtil.getKlassFromClass(UnsafeKnotClassLoader.class));
 
             classes.put(superclass.getName(), superclass);

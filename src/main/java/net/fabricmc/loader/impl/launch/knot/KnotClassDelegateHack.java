@@ -413,7 +413,7 @@ final class KnotClassDelegateHack<T extends ClassLoader & KnotClassDelegate.Clas
         name = name.replace('/', '.');
         if (this.transformInitialized && canTransformClass(name)) {
             byte[] input = this.provider.getEntrypointTransformer().transform(name);
-            if (input == null) {
+            if (input == null || !name.equals(this.provider.getEntrypoint())) {
                 try {
                     input = this.getRawClassByteArray(name, allowFromParent);
                 } catch (IOException var5) {

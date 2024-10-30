@@ -61,7 +61,7 @@ public class GrossFabricHacks implements LanguageAdapter {
             String className = stack.pop();
             try {
                 if (!classes.containsKey(className)) {
-                    classes.put(className, UnsafeUtil.findAndDefineClass(className, KnotClassLoader.getClass().getClassLoader()));
+                    classes.put(className, UnsafeUtil.findAndDefineClass(className, GrossFabricHacks.class.getClassLoader()));
                 }
                 UnsafeUtil.initialiizeClass(classes.get(className));
             } catch (final Throwable throwable) {
@@ -106,9 +106,19 @@ public class GrossFabricHacks implements LanguageAdapter {
             UnsafeUtil.findAndDefineAndInitializeClass("net.fabricmc.loader.impl.launch.knot.KnotClassLoaderHack$DynamicURLClassLoader", KnotClassLoader.getClass().getClassLoader());
             UnsafeUtil.findAndDefineClass("net.fabricmc.loader.impl.launch.knot.KnotClassDelegateHack$ClassLoaderAccess", KnotClassLoader.getClass().getClassLoader());
             UnsafeUtil.findAndDefineAndInitializeClass("net.fabricmc.loader.impl.launch.knot.KnotClassLoaderHack", KnotClassLoader.getClass().getClassLoader());
-            UnsafeUtil.findAndDefineAndInitializeClass("net.fabricmc.loader.impl.launch.knot.KnotClassDelegateHack$1", KnotClassLoader.getClass().getClassLoader());
             UnsafeUtil.findAndDefineAndInitializeClass("org.spongepowered.asm.mixin.transformer.MixinTransformerHack", KnotClassLoader.getClass().getClassLoader());
-            UnsafeUtil.findAndDefineAndInitializeClass("net.fabricmc.loader.impl.launch.knot.KnotClassDelegateHack", KnotClassLoader.getClass().getClassLoader());
+            Class c = UnsafeUtil.findAndDefineClass("net.fabricmc.loader.impl.launch.knot.KnotClassDelegateHack", KnotClassLoader.getClass().getClassLoader());
+
+            while(true) {
+                try {
+                    UnsafeUtil.initialiizeClass(c);
+                    break;
+                } catch (Throwable var7) {
+                    if (var7 instanceof NoClassDefFoundError noClassDefFoundError) {
+                        UnsafeUtil.findAndDefineAndInitializeClass(noClassDefFoundError.getMessage(), KnotClassLoader.getClass().getClassLoader());
+                    }
+                }
+            }
 
             UNSAFE_LOADER = UnsafeUtil.defineAndInitializeAndUnsafeCast(KnotClassLoader, "net.fabricmc.loader.impl.launch.knot.UnsafeKnotClassLoader", KnotClassLoader.getClass().getClassLoader());
         } catch (final Throwable throwable) {
