@@ -6,11 +6,22 @@ import net.devtech.grossfabrichacks.unsafe.UnsafeUtil;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.impl.entrypoint.EntrypointUtilsHack;
+import net.fabricmc.loader.impl.launch.knot.Knot;
 import net.fabricmc.loader.impl.launch.knot.UnsafeKnotClassLoader;
+import net.fabricmc.loader.impl.util.LoaderUtil;
+import net.fabricmc.loader.impl.util.UrlUtil;
+import net.gudenau.lib.unsafe.Unsafe;
 
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.nio.file.Path;
+import java.security.cert.Certificate;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -90,6 +101,44 @@ public class GrossFabricHacks implements LanguageAdapter {
                 "net.devtech.grossfabrichacks.unsafe.UnsafeUtil$FirstInt"
             };
 
+            final String[] codeSourcesToFind = {
+                    "net.auoeke.reflect.ClassDefiner",
+                    "net.gudenau.lib.unsafe.Unsafe",
+                    "net.devtech.grossfabrichacks.instrumentation.InstrumentationAgent",
+                    "net.devtech.grossfabrichacks.instrumentation.InstrumentationApi",
+                    "net.devtech.grossfabrichacks.State",
+                    "net.devtech.grossfabrichacks.unsafe.UnsafeUtil",
+                    "net.devtech.grossfabrichacks.unsafe.UnsafeUtil$FirstInt"
+            };
+
+            for (String name : codeSourcesToFind) {
+                String fileName = LoaderUtil.getClassFileName(name);
+                URL url = applicationClassLoader.getResource(fileName);
+
+                if (url == null) {
+                    url = KnotClassLoader.getResource(fileName);
+                    if (url == null) {
+                        continue;
+                    }
+                }
+
+                // KnotClassDelegate
+                Field f = KnotClassLoader.getClass().getDeclaredField("delegate");
+                f.setAccessible(true);
+                Object delegate = f.get(KnotClassLoader);
+                Field f2 = delegate.getClass().getDeclaredField("validParentCodeSources");
+                f2.setAccessible(true);
+                Set<Path> originalValidcodeSources = (Set<Path>) f2.get(delegate);
+                Set<Path> newValidPaths = new HashSet<>(originalValidcodeSources.size(), 1);
+
+                for (Path path : originalValidcodeSources) {
+                    newValidPaths.add(LoaderUtil.normalizeExistingPath(path));
+                }
+
+                newValidPaths.add(LoaderUtil.normalizeExistingPath(UrlUtil.getCodeSource(url, fileName)));
+                Knot.getLauncher().setValidParentClassPath(newValidPaths);
+            }
+
             final int classCount = classes.length;
 
             for (int i = FabricLoader.getInstance().isDevelopmentEnvironment() ? 1 : 0; i < classCount; i++) {
@@ -109,15 +158,22 @@ public class GrossFabricHacks implements LanguageAdapter {
             UnsafeUtil.findAndDefineAndInitializeClass("org.spongepowered.asm.mixin.transformer.MixinTransformerHack", KnotClassLoader.getClass().getClassLoader());
             Class c = UnsafeUtil.findAndDefineClass("net.fabricmc.loader.impl.launch.knot.KnotClassDelegateHack", KnotClassLoader.getClass().getClassLoader());
 
-            while(true) {
-                try {
-                    UnsafeUtil.initialiizeClass(c);
-                    break;
-                } catch (Throwable var7) {
-                    if (var7 instanceof NoClassDefFoundError noClassDefFoundError) {
-                        UnsafeUtil.findAndDefineAndInitializeClass(noClassDefFoundError.getMessage(), KnotClassLoader.getClass().getClassLoader());
-                    }
+            ConcurrentHashMap<String, Certificate[]> package2certs = Unsafe.getReference(applicationClassLoader, 44);  // the most magic value that has ever been magicked
+            Certificate[] oldCert = package2certs.get(c.getPackageName());
+            package2certs.put(c.getPackageName(), new Certificate[0]);
+
+            try {
+                UnsafeUtil.initialiizeClass(c);
+            } catch (Throwable var7) {
+                if (var7 instanceof NoClassDefFoundError noClassDefFoundError) {
+                    UnsafeUtil.findAndDefineAndInitializeClass(noClassDefFoundError.getMessage(), KnotClassLoader.getClass().getClassLoader());
                 }
+            }
+
+            if (oldCert != null) {
+                package2certs.put(c.getPackageName(), oldCert);
+            } else {
+                package2certs.remove(c.getPackageName());
             }
 
             UNSAFE_LOADER = UnsafeUtil.defineAndInitializeAndUnsafeCast(KnotClassLoader, "net.fabricmc.loader.impl.launch.knot.UnsafeKnotClassLoader", KnotClassLoader.getClass().getClassLoader());

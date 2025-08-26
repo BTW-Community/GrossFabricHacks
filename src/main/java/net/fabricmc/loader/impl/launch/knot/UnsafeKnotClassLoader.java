@@ -43,7 +43,7 @@ public class UnsafeKnotClassLoader extends KnotClassLoaderHack {
     }
 
     public Class<?> defineClass(final String name, final byte[] bytes) {
-        final Class<?> klass = UnsafeUtil.defineClass(name, bytes, null, null);
+        final Class<?> klass = UnsafeUtil.defineClass(name, bytes, this, null);
 
         classes.put(name, klass);
 
